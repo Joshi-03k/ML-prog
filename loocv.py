@@ -1,30 +1,40 @@
-import numpy as np
-import pandas as pd
+# naive grid search implementation
+from sklearn.svm import SVC
+from sklearn.datasets import load_iris
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
-import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score
+import numpy as np
 
-df_wine=pd.read_csv('D:/Kashyap/ml/wine.csv')
-print(df_wine)
-feat_labels = df_wine.columns[1:]
+iris = load_iris()
 
-X, y = df_wine.iloc[:, 1:].values, df_wine.iloc[:, 0].values
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_trainval, X_test, y_trainval, y_test = train_test_split(
+iris.data, iris.target, random_state=0)
+# split train+validation set into training and validation sets
+X_train, X_valid, y_train, y_valid = train_test_split(
+X_trainval, y_trainval, random_state=1)
+print("Size of training set: {} size of validation set: {} size of test set:"
+" {}\n".format(X_train.shape[0], X_valid.shape[0], X_test.shape[0]))
+best_score = 0
+for gamma in [0.001, 0.01, 0.1, 1, 10, 100]:
+    for C in [0.001, 0.01, 0.1, 1, 10, 100]:
+    # for each combination of parameters,
+    # train an SVC
+        svm = SVC(gamma=gamma, C=C)
+        # perform cross-validation
+        scores = cross_val_score(svm, X_trainval, y_trainval, cv=5)
+        # compute mean cross-validation accuracy
+        score = np.mean(scores)
+        # if we got a better score, store the score and parameters
+        if score > best_score:
+            best_score = score
+            best_parameters = {'C': C, 'gamma': gamma}
+# rebuild a model on the combined training and validation set
+svm = SVC(**best_parameters)
+svm.fit(X_trainval, y_trainval)
+test_score = svm.score(X_test, y_test)
 
-# Create a decision tree classifier
-clf = DecisionTreeClassifier(random_state=42)
-
-# Fit the classifier to the training data
-clf.fit(X_train, y_train)
-
-# Get feature importances
-feature_importances = clf.feature_importances_
-
-# Print feature importances
-for feature, importance in zip(df_wine.columns, feature_importances):
-    print(f"{feature}: {importance}")
-
-indices = np.argsort(feature_importances)[::-1]
-for f in range(X_train.shape[1]):print("%2d) %-*s %f" % (f + 1, 30,feat_labels[f],feature_importances[indices[f]]))
+print("Best score on validation set: {:.2f}".format(best_score))
+print("Best parameters: ", best_parameters)
+print("Test set score with best parameters: {:.2f}".format(test_score))
 

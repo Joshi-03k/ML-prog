@@ -1,24 +1,47 @@
-from sklearn.tree import DecisionTreeClassifier
+# naive grid search implementation
+from sklearn.svm import SVC
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+import pandas as pd
+from IPython.display import display
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import mglearn.plots
 
-# Load the iris dataset
 iris = load_iris()
-X = iris.data
-y = iris.target
 
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+param_grid = {'C': [0.001, 0.01, 0.1, 1, 10, 100],'gamma': [0.001, 0.01, 0.1, 1, 10, 100]}
+print("Parameter grid:\n{}".format(param_grid))
 
-# Create a decision tree classifier
-clf = DecisionTreeClassifier(random_state=42)
 
-# Fit the classifier to the training data
-clf.fit(X_train, y_train)
+grid_search = GridSearchCV(SVC(), param_grid, cv=5)
+X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, random_state=0)
 
-# Get feature importances
-feature_importances = clf.feature_importances_
+grid_search.fit(X_train, y_train)
 
-# Print feature importances
-for feature, importance in zip(iris.feature_names, feature_importances):
-    print(f"{feature}: {importance}")
+print("Test set score: {:.2f}".format(grid_search.score(X_test, y_test)))
+
+print("Best parameters: {}".format(grid_search.best_params_))
+print("Best cross-validation score: {:.2f}".format(grid_search.best_score_))
+
+print("Best estimator:\n{}".format(grid_search.best_estimator_))
+
+# convert to DataFrame
+results = pd.DataFrame(grid_search.cv_results_)
+# show the first 5 rows
+display(results.head())
+
+scores = np.array(results.mean_test_score).reshape(6, 6)
+# plot the mean cross-validation scores
+mglearn.tools.heatmap(scores, xlabel='gamma', xticklabels=param_grid['gamma'],ylabel='C', yticklabels=param_grid['C'], cmap="viridis")
+plt.show()
+
+# Another way to show heatmap with seaborn
+#hm = sns.heatmap(data=scores,annot=True)
+#plt.title("Heatmap")
+#plt.xlabel("C")
+#plt.ylabel("gamma")
+#plt.show()
+
