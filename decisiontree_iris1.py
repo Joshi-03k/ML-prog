@@ -1,18 +1,21 @@
-from sklearn import datasets
-import sklearn.model_selection as ms
-from sklearn import tree
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix 
-from sklearn.metrics import classification_report 
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from dtreeviz.trees import dtreeviz
+from sklearn.tree import DecisionTreeClassifier
 
+# Load the Iris dataset
+iris = load_iris()
+X = iris.data
+y = iris.target
 
-data=datasets.load_breast_cancer()
-xt,tx,yt,ty=ms.train_test_split(data.data,data.target,test_size=0.2,random_state=42)
-dtc=tree.DecisionTreeClassifier(random_state=42)
-dtc.fit(xt,yt)
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-yp=dtc.predict(tx)
+# Train a DecisionTreeClassifier
+model = DecisionTreeClassifier(criterion='entropy')  
+# ID3 uses information gain, which is based on entropy
+model.fit(X_train, y_train)
 
-print('Accuracy if Decision Tree',accuracy_score(yp,ty))
-print('\n','Confusion Matric - Test:','\n',confusion_matrix(ty,yp))
-print(classification_report(ty,yp))
+# Visualize the decision tree
+viz = dtreeviz(model, X, y,feature_names=iris.feature_names,class_names=iris.target_names)
+viz.view()
